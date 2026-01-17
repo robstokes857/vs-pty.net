@@ -1,9 +1,28 @@
-# Pty.Net
-[![NuGet package](https://img.shields.io/nuget/v/Pty.Net.svg)](https://nuget.org/packages/Pty.Net)
+# Pty.Net (Fork)
 
 Pty.Net is a cross platform, .NET library providing idiomatic bindings for `forkpty()`.
 
-Pty.Net supports Linux, macOS, and Windows. On versions of windows older than 1809 the [winpty](https://github.com/rprichard/winpty) is used. For windows 1809+ this library ships a side-by-side copy of conhost.
+This is a modified fork of [microsoft/vs-pty.net](https://github.com/microsoft/vs-pty.net) with the following changes:
+
+## Changes from upstream
+
+- **Removed enterprise build dependencies** - Stripped out MicroBuild, Nerdbank.GitVersioning, StyleCop, and Azure DevOps feed references
+- **Removed bundled ConPTY DLLs** - Windows now uses the built-in `kernel32.dll` ConPTY APIs (requires Windows 10 1809+)
+- **Simplified project files** - Cleaned up `Directory.Build.props` and `Pty.Net.csproj`
+- **Removed nuget.config** - No longer requires authenticated Azure DevOps feeds
+
+## Platform Support
+
+| Platform | Implementation |
+|----------|---------------|
+| Windows 10 1809+ | `kernel32.dll` (ConPTY) |
+| Linux | `libc.so.6` + `libutil.so.1` (forkpty) |
+| macOS | `libSystem.dylib` (forkpty) |
+
+## Requirements
+
+- .NET Standard 2.0 compatible runtime
+- Windows 10 version 1809 or later (for Windows support)
 
 # Contributing
 
