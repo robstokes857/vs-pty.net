@@ -9,7 +9,6 @@ namespace Pty.Net.Windows
     using System.Diagnostics;
     using System.IO;
     using System.IO.Pipes;
-    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
     using System.Text;
     using System.Threading;
@@ -88,7 +87,7 @@ namespace Pty.Net.Windows
         private static string GetAppOnPath(string app, string cwd, IDictionary<string, string> env)
         {
             bool isWow64 = Environment.GetEnvironmentVariable("PROCESSOR_ARCHITEW6432") != null;
-            var windir = Environment.GetEnvironmentVariable("WINDIR");
+            var windir = Environment.GetEnvironmentVariable("WINDIR") ?? @"C:\Windows";
             var sysnativePath = Path.Combine(windir, "Sysnative");
             var sysnativePathWithSlash = sysnativePath + Path.DirectorySeparatorChar;
             var system32Path = Path.Combine(windir, "System32");
@@ -138,7 +137,7 @@ namespace Pty.Net.Windows
                 throw new ArgumentException($"Terminal app path '{app}' is too long");
             }
 
-            string pathEnvironment = (env != null && env.TryGetValue("PATH", out string p) ? p : null)
+            string? pathEnvironment = (env != null && env.TryGetValue("PATH", out string? p) ? p : null)
                 ?? Environment.GetEnvironmentVariable("PATH");
 
             if (string.IsNullOrWhiteSpace(pathEnvironment))
@@ -324,24 +323,14 @@ namespace Pty.Net.Windows
 
             var coord = new Coord(options.Cols, options.Rows);
             var pseudoConsoleHandle = new SafePseudoConsoleHandle();
-            int hr;
-            RuntimeHelpers.PrepareConstrainedRegions();
-            try
-            {
-                // Run CreatePseudoConsole* in a CER to make sure we don't leak handles.
-                // MSDN suggest to put all CER code in a finally block
-                // See http://msdn.microsoft.com/en-us/library/system.runtime.compilerservices.runtimehelpers.prepareconstrainedregions(v=vs.110).aspx
-            }
-            finally
-            {
-                // Create the Pseudo Console, using the pipes
-                hr = CreatePseudoConsole(coord, inPipePseudoConsoleSide.Handle, outPipePseudoConsoleSide.Handle, 0, out IntPtr hPC);
 
-                // Remember the handle inside the CER to prevent leakage
-                if (hPC != IntPtr.Zero && hPC != INVALID_HANDLE_VALUE)
-                {
-                    pseudoConsoleHandle.InitialSetHandle(hPC);
-                }
+            // Create the Pseudo Console, using the pipes
+            int hr = CreatePseudoConsole(coord, inPipePseudoConsoleSide.Handle, outPipePseudoConsoleSide.Handle, 0, out IntPtr hPC);
+
+            // Remember the handle to prevent leakage
+            if (hPC != IntPtr.Zero && hPC != INVALID_HANDLE_VALUE)
+            {
+                pseudoConsoleHandle.InitialSetHandle(hPC);
             }
 
             if (hr != S_OK)
@@ -377,46 +366,37 @@ namespace Pty.Net.Windows
                     commandLine.Append(arguments);
                 }
 
-                bool success;
-                int errorCode = 0;
                 var processInfo = default(PROCESS_INFORMATION);
                 var processHandle = new SafeProcessHandle();
                 var mainThreadHandle = new SafeThreadHandle();
 
-                RuntimeHelpers.PrepareConstrainedRegions();
-                try
+                bool success = CreateProcess(
+                    null,   // lpApplicationName
+                    commandLine.ToString(),
+                    null,   // lpProcessAttributes
+                    null,   // lpThreadAttributes
+                    false,  // bInheritHandles VERY IMPORTANT that this is false
+                    EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT, // dwCreationFlags
+                    lpEnvironment,
+                    options.Cwd,
+                    ref startupInfo,
+                    out processInfo);
+
+                int errorCode = 0;
+                if (!success)
                 {
-                    // Run CreateProcess* in a CER to make sure we don't leak handles.
+                    errorCode = Marshal.GetLastWin32Error();
                 }
-                finally
+
+                // Remember the handles to prevent leakage
+                if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != INVALID_HANDLE_VALUE)
                 {
-                    success = CreateProcess(
-                        null,   // lpApplicationName
-                        commandLine.ToString(),
-                        null,   // lpProcessAttributes
-                        null,   // lpThreadAttributes
-                        false,  // bInheritHandles VERY IMPORTANT that this is false
-                        EXTENDED_STARTUPINFO_PRESENT | CREATE_UNICODE_ENVIRONMENT, // dwCreationFlags
-                        lpEnvironment,
-                        options.Cwd,
-                        ref startupInfo,
-                        out processInfo);
+                    processHandle.InitialSetHandle(processInfo.hProcess);
+                }
 
-                    if (!success)
-                    {
-                        errorCode = Marshal.GetLastWin32Error();
-                    }
-
-                    // Remember the handles inside the CER to prevent leakage
-                    if (processInfo.hProcess != IntPtr.Zero && processInfo.hProcess != INVALID_HANDLE_VALUE)
-                    {
-                        processHandle.InitialSetHandle(processInfo.hProcess);
-                    }
-
-                    if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != INVALID_HANDLE_VALUE)
-                    {
-                        mainThreadHandle.InitialSetHandle(processInfo.hThread);
-                    }
+                if (processInfo.hThread != IntPtr.Zero && processInfo.hThread != INVALID_HANDLE_VALUE)
+                {
+                    mainThreadHandle.InitialSetHandle(processInfo.hThread);
                 }
 
                 if (!success)

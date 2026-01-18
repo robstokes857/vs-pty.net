@@ -22,7 +22,7 @@ namespace Pty.Net.Mac
 
         private const string LibSystem = "libSystem.dylib";
 
-        private static readonly int SizeOfIntPtr = Marshal.SizeOf(typeof(IntPtr));
+        private static readonly int SizeOfIntPtr = Marshal.SizeOf<IntPtr>();
 
         public enum TermSpeed : uint
         {

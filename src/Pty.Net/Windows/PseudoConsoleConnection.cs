@@ -88,7 +88,7 @@ namespace Pty.Net.Windows
             return this.process.WaitForExit(milliseconds);
         }
 
-        private void Process_Exited(object sender, EventArgs e)
+        private void Process_Exited(object? sender, EventArgs e)
         {
             this.ProcessExited?.Invoke(this, new PtyExitedEventArgs(this.process.ExitCode));
         }

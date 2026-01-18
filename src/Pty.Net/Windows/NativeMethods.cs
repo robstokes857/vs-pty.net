@@ -6,7 +6,6 @@ namespace Pty.Net.Windows
     using System;
     using System.ComponentModel;
     using System.Diagnostics;
-    using System.Runtime.ConstrainedExecution;
     using System.Runtime.InteropServices;
     using System.Security;
     using System.Text;
@@ -42,7 +41,6 @@ namespace Pty.Net.Windows
 
         [return: MarshalAs(UnmanagedType.Bool)]
         [DllImport("kernel32.dll", SetLastError = true)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
         internal static extern bool CloseHandle(IntPtr hObject);
 
         [DllImport("kernel32.dll", SetLastError = true)]
@@ -62,7 +60,6 @@ namespace Pty.Net.Windows
             IntPtr lpReturnSize);
 
         [return: MarshalAs(UnmanagedType.Bool)]
-        [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
         internal static extern bool CreateProcess(
             string? lpApplicationName,
@@ -245,7 +242,6 @@ namespace Pty.Net.Windows
             /// for the handle to happen before the CER call to get it.
             /// </summary>
             /// <param name="handle">The native handle.</param>
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
             public void InitialSetHandle(IntPtr handle)
             {
                 this.handle = handle;
@@ -314,7 +310,6 @@ namespace Pty.Net.Windows
                 this.SetHandle(handle);
             }
 
-            [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
             [SecurityCritical]
             protected override bool ReleaseHandle()
             {

@@ -17,7 +17,7 @@ namespace Pty.Net.Linux
         internal const int SIGHUP = 1;
 
         private const string LibSystem = "libc.so.6";
-        private static readonly int SizeOfIntPtr = Marshal.SizeOf(typeof(IntPtr));
+        private static readonly int SizeOfIntPtr = Marshal.SizeOf<IntPtr>();
 
         public enum TermSpeed : uint
         {
