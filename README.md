@@ -6,6 +6,10 @@ This is a modified fork of [microsoft/vs-pty.net](https://github.com/microsoft/v
 
 ## Changes from upstream
 
+Human note: This port has worked successfully for 10k+ sessions in my other project on .NET 10 AOT in Mac, Windows and Linux. There have been a few bug fixes I have not ported over into this project but if anyone wants me to please feel free to ask. Mostly, it'll get you like 99% of what you want if you need to get really low level with some PTY in C# while staying AOT compatible.   
+
+
+
 - **Removed enterprise build dependencies** - Stripped out MicroBuild, Nerdbank.GitVersioning, StyleCop, and Azure DevOps feed references
 - **Removed bundled ConPTY DLLs** - Windows now uses the built-in `kernel32.dll` ConPTY APIs (requires Windows 10 1809+)
 - **Simplified project files** - Cleaned up `Directory.Build.props` and `Pty.Net.csproj`
